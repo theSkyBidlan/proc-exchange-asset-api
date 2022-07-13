@@ -1,0 +1,38 @@
+#%RAML 1.0
+title: proc-exchange-asset-api
+
+
+traits:
+  assets-search: !include traits/assets-search.raml
+  assetsPagination: !include traits/assetsPagination.raml
+  
+/:
+
+
+/asset:
+  get:
+    queryParameters:
+      orgId: string
+      emailId: string
+    body:
+      application/json:
+        type : object
+        properties:
+          SAMLResponse: 
+            type : string
+            description: SAML Response from Anypoint Login
+            example:
+              "PHNhbWxwOlJlc3BvbnNlIFZlcnNpb249IjIuMCIgSUQ9ImtHNXZldFZyRzNLTllkNWhhV01mZDdhbjB3VSIgSXNzdWVJbnN0YW50PSIyMDIyLTA2LTI4VDE1OjM2OjE1LjY1NFoiIERlc3RpbmF0aW9uPSJodHRwczovL2FueXBvaW50Lm11bGVzb2Z0LmNvbS9hY2NvdW50cy9sb2dpbi9yZWNlaXZlLWlkIiB4bWxuczpzYW1scD0idXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6Mi4wOnByb3RvY29sIj48c2FtbDpJc3N1ZXIgeG1sbnM6c2FtbD0idXJuOm9hc2lzOm5hbWVzOnRjOlNBTUw6Mi4wOmFzc2VydGlvbiI+c3NvLnNo"
+    responses:
+      200:
+        body:
+          application/json:
+            example:
+              type: object
+              properties:
+                statusCode: "abc.csv"
+                statusMessage: "abc.csv sent to email"
+
+              
+  
+      

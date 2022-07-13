@@ -1,0 +1,42 @@
+{
+  "configs": [
+    "global.xml",
+    "proc-exchange-asset-api.xml",
+    "get-exchange-asset.xml",
+    "get-all-runtime-applications.xml",
+    "get-anypoint-token.xml",
+    "porcess-asset-details.xml"
+  ],
+  "secureProperties": [],
+  "redeploymentEnabled": true,
+  "name": "com.mycompany:proc-exchange-asset-api:1.0.0-SNAPSHOT",
+  "minMuleVersion": "4.3.0",
+  "requiredProduct": "MULE_EE",
+  "classLoaderModelLoaderDescriptor": {
+    "id": "mule",
+    "attributes": {
+      "exportedPackages": [],
+      "exportedResources": [
+        "api/examples/assetsSearch.json",
+        "api/exchange.json",
+        "api/proc-exchange-asset-api.raml",
+        "api/resourceTypes/assetSearch.raml",
+        "api/traits/assets-search.raml",
+        "api/traits/assetsPagination.raml",
+        "api/types/singleAsset.raml",
+        "application-types.xml",
+        "get-all-runtime-applications.xml",
+        "get-anypoint-token.xml",
+        "get-exchange-asset.xml",
+        "global.xml",
+        "log4j2.xml",
+        "porcess-asset-details.xml",
+        "proc-exchange-asset-api.xml"
+      ]
+    }
+  },
+  "bundleDescriptorLoader": {
+    "id": "mule",
+    "attributes": {}
+  }
+}

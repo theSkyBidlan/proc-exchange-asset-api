@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<sub-flow name="get-exchange-asset-sub-flow" doc:id="08d551e4-39ac-4925-b8c2-d8cf80faee1c" >
+		<http:request method="GET" doc:name="Search Asset by OrgId" doc:id="06bf7974-f225-43fa-b19d-d40f890efb59" path="/exchange/api/v2/assets/search" config-ref="HTTP_Request_configuration-1">
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer " ++ (vars.token default"")
+}]]]></http:headers>
+			<http:query-params ><![CDATA[#[output application/java
+---
+{
+	"search" : payload.id as String,
+	//"limit" : "250",
+	"types" : "rest-api",
+	"types" : "soap-api",
+	"organizationId" : vars.orgId
+}]]]></http:query-params>
+		</http:request>
+	</sub-flow>
+	<sub-flow name="get-exchange-api-model-sub-flow" doc:id="7277a4b6-e02f-4d92-a19e-54d39f763e7b" >
+		<http:request method="GET" doc:name="Get API Model" doc:id="97b737ab-445d-4688-8fe1-607a85ef4e77" path="/exchange/api/v2/assets/{groupId}/{assetId}/{version}/api/model" config-ref="HTTP_Request_configuration-1" requestStreamingMode="ALWAYS">
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer " ++ (vars.token default"")
+}]]]></http:headers>
+			<http:uri-params ><![CDATA[#[output application/java
+---
+{
+	assetId : payload.assetId,
+	groupId : payload.groupId,
+	version : payload.version
+}]]]></http:uri-params>
+			<http:response-validator >
+				<http:success-status-code-validator values="200..599" />
+			</http:response-validator>
+		</http:request>
+	</sub-flow>
+</mule>

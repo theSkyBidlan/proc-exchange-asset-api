@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<sub-flow name="get-anypoint-token-sub-flow" doc:id="3ff14ea6-aa1a-41d8-8fe5-bceaf6e062a3" >
+		<http:request method="POST" doc:name="Get Token" doc:id="1b79b842-3d81-4cd8-ac09-70491794ab84" path="/accounts/login/receive-id" target="anypointToken" config-ref="HTTP_Request_configuration-1" targetValue='#[payload.access_token]'>
+			<http:body><![CDATA[#[output applicatin/json --- payload]]]></http:body>
+			<http:headers><![CDATA[#[output application/java
+---
+{
+	"Content-Type" : "application/json",
+	"X-Requested-With" : "XMLHttpRequest"
+}]]]></http:headers>
+		</http:request>
+	</sub-flow>
+</mule>

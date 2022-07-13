@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<sub-flow name="get-all-runtime-applications-sub-flow" doc:id="1bf8e48e-9541-4473-8293-8f153ccdc3f1" >
+		<http:request method="GET" doc:name="Get All CloudHub APP" doc:id="d605bb8a-f73c-474b-94c8-88a0c75cb774" config-ref="HTTP_Request_configuration-1" path="/armui/api/v1/applications" target="cloudHubAPI">
+			<http:headers ><![CDATA[#[output application/java 
+---
+{
+	"Authorization": "Bearer " ++ (vars.token default""),
+	"X-ANYPNT-ORG-ID": vars.orgId,
+	"X-ANYPNT-ENV-ID": vars.envId
+}]]]></http:headers>
+		</http:request>
+	</sub-flow>
+	<sub-flow name="get-all-rtf-applications-sub-flow" doc:id="a3448284-e643-48b7-a3bc-ff12e1911e1a" >
+		<http:request method="GET" doc:name="Get RTF Application" doc:id="4a8b1181-d2d3-459f-adf1-b746bac828ca" config-ref="HTTP_Request_configuration-1" path="/hybrid/api/v2/organizations/{groupId}/environments/{envId}/deployments/" target="rtfAPI">
+			<http:headers><![CDATA[#[output application/java 
+---
+{
+	"Authorization": "Bearer " ++ (vars.token default"")
+}]]]></http:headers>
+			<http:uri-params><![CDATA[#[output application/java
+---
+{
+	groupId : vars.orgId,
+	envId : vars.envId
+}]]]></http:uri-params>
+		</http:request>
+	</sub-flow>
+</mule>
