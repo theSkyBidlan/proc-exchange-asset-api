@@ -15,4 +15,14 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
 }]]]></http:headers>
 		</http:request>
 	</sub-flow>
+	<sub-flow name="get-profile-information-sub-flow" doc:id="63d62a7d-dd53-4599-a650-5f870c0cadcf" >
+		<http:request method="GET" doc:name="Get Profile Information" doc:id="cf0c3afb-c9ad-4209-b2db-cff64f7e63b3" config-ref="HTTP_Request_configuration-1" path="/accounts/api/profile">
+			<http:body ><![CDATA[#[output applicatin/json --- payload]]]></http:body>
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer " ++ (vars.token default"")
+}]]]></http:headers>
+		</http:request>
+	</sub-flow>
 </mule>

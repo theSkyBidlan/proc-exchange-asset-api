@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:ftp="http://www.mulesoft.org/schema/mule/ftp"
+	xmlns:compression="http://www.mulesoft.org/schema/mule/compression"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/compression http://www.mulesoft.org/schema/mule/compression/current/mule-compression.xsd
+http://www.mulesoft.org/schema/mule/ftp http://www.mulesoft.org/schema/mule/ftp/current/mule-ftp.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+	<sub-flow name="write-file-details-sub-flow" doc:id="4ef022fe-d514-4cca-b2b7-3f04cffbf30d" >
+		<file:write doc:name="toCsv" doc:id="5b77e68b-2b9a-4b20-8c98-aeb30f298f1d" path='#["C:\Users\aakash.bidlan\Documents\SFCRM\Hari-Poc\\" ++ vars.filePath]'>
+			<file:content><![CDATA[#[output application/csv quoteValues=true
+--- 
+payload]]]></file:content>
+		</file:write>
+	</sub-flow>
+	<sub-flow name="porcess-asset-details-sub-flow" doc:id="4fe656c9-fd5e-476c-8a1e-61c2ce270e64" >
+		<!-- <flow-ref doc:name="get-anypoint-token-sub-flow" doc:id="3b8a66cc-ed25-44c8-b2a2-4a092b8e7ccb" name="get-anypoint-token-sub-flow"/> -->
+		<flow-ref doc:name="process-api-list-sub-flow" doc:id="f1dc85f8-8758-4808-a0ca-1d5e9a29a6f4" name="process-api-list-sub-flow"/>
+		<flow-ref doc:name="porcess-end-point-details-sub-flow" doc:id="b1694341-f052-42e6-86df-f8d4a4cd3024" name="porcess-end-point-details-sub-flow"/>
+		<set-variable value='#[output application/java --- "api-exchange-endpoint-details-" ++ (vars.bgName default vars.orgId) ++ "-" ++ now() as Number ++ ".csv"]' doc:name="filePath" doc:id="155ff4c4-90ed-4df6-82cb-3c1d304b782f" variableName="filePath" mimeType="application/java"/>
+		<set-payload value="#[vars.apiEndPointDetails]" doc:name="Set JSON Payload" doc:id="6c1e63db-c8da-4d95-a46c-bbdb47e16b56" mimeType="application/json"/>
+		<flow-ref doc:name="write-file-details-sub-flow" doc:id="165fac15-ffb8-474d-a8d5-2205395da7b9" name="write-file-details-sub-flow"/>
+		<ee:transform doc:name="Transform Message" doc:id="9be9b41d-2c70-42db-b9f9-fc99f9997793" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+ statusCode : "200",
+ statusDescription: (vars.filePath default "") ++ " File Processed Successfully."
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</sub-flow>
+	<sub-flow name="porcess-end-point-details-sub-flow" doc:id="35ee7f92-54db-4107-91a8-2e6ccdcc74eb" >
+		<foreach doc:name="For Each" doc:id="9d79c268-11e2-409a-b8db-6804cabff16a" collection="#[vars.apiList]">
+			<set-variable value="#[payload]" doc:name="requestPayload" doc:id="172cd577-fa30-4984-aa61-584ece67e8a2" variableName="requestPayload" />
+			<choice doc:name="Is API on Exchange ?" doc:id="3331e41b-27c8-46a9-be5d-067d6d79702e">
+				<when expression='#[vars.requestPayload.groupId != "NOT FOUND"]'>
+					<flow-ref doc:name="get-exchange-api-model-sub-flow" doc:id="de796a62-5bfb-4a0f-b514-7a5fb0f71989" name="get-exchange-api-model-sub-flow" />
+					<choice doc:name="Choice" doc:id="d80c3f4f-9d27-4468-9d04-f3b9050e21a2">
+				<when expression="#[attributes.statusCode == 200]">
+					<compression:decompress doc:name="Decompress" doc:id="8bf3e570-0051-4ccc-9cec-88771ffefe42" outputMimeType="application/octet-stream" outputEncoding="UTF-8">
+				<compression:decompressor>
+					<compression:gzip-decompressor />
+				</compression:decompressor>
+			</compression:decompress>
+					<ee:transform doc:name="apiEndPointDetails" doc:id="6a6854db-e68d-4d09-99dd-1f37086d9cf1">
+				<ee:message>
+				</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="apiEndPointDetails"><![CDATA[%dw 2.0
+output application/json
+var convertedPayload = read(payload,"application/json")
+var assetDetail = convertedPayload."@graph" filter (!isEmpty($."apiContract:path") and !isEmpty($."apiContract:supportedOperation")) map  (item, index) -> {
+    "groupId": vars.requestPayload.groupId,
+     bgName: vars.requestPayload.bgName,
+    "assetId": vars.requestPayload.assetId,
+    "version": vars.requestPayload.version,
+    versionGroup: vars.requestPayload.versionGroup,
+    status: vars.requestPayload.status,
+    "type": vars.requestPayload."type",
+    name: (item."apiContract:path" default "")as String,
+    method: ((convertedPayload."@graph" filter((item."apiContract:supportedOperation"."@id") contains($."@id"))))."apiContract:method" joinBy ',',
+    descritpion: ((convertedPayload."@graph" filter((item."apiContract:supportedOperation"."@id") contains($."@id"))))."core:description" default[] joinBy ' and ' 
+    }
+    
+
+---
+(vars.apiEndPointDetails default[] ++ assetDetail)]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+				</when>
+				<otherwise>
+					<ee:transform doc:name="apiEndPointDetails" doc:id="329dbf98-0339-418d-9649-97ef9810c29f">
+						<ee:message />
+						<ee:variables>
+							<ee:set-variable variableName="apiEndPointDetails"><![CDATA[%dw 2.0
+output application/json
+var assetDetail =  [{
+    "groupId": vars.requestPayload.groupId,
+     bgName: vars.requestPayload.bgName,
+    "assetId": vars.requestPayload.assetId,
+    "version": vars.requestPayload.version,
+    versionGroup: vars.requestPayload.versionGroup,
+    status: vars.requestPayload.status,
+    "type": vars.requestPayload."type",
+    name: payload.message default "",
+    method: "",
+    descritpion: "" 
+    }]
+---
+(vars.apiEndPointDetails default[] ++ assetDetail)]]></ee:set-variable>
+						</ee:variables>
+					</ee:transform>
+				</otherwise>
+			</choice>
+				</when>
+				<otherwise>
+					<ee:transform doc:name="apiEndPointDetails" doc:id="651db05f-f0ca-46fa-839e-0f6044df6550">
+						<ee:message />
+						<ee:variables>
+							<ee:set-variable variableName="apiEndPointDetails"><![CDATA[%dw 2.0
+output application/json
+var assetDetail =  [{
+    "groupId": vars.requestPayload.groupId,
+    bgName: vars.requestPayload.bgName,
+    "assetId": vars.requestPayload.assetId,
+    "version": vars.requestPayload.version,
+    versionGroup: vars.requestPayload.versionGroup,
+    status: vars.requestPayload.status,
+    "type": vars.requestPayload."type",
+    name: "",
+    method: "",
+    descritpion: "" 
+    }]
+---
+(vars.apiEndPointDetails default[] ++ assetDetail)]]></ee:set-variable>
+						</ee:variables>
+					</ee:transform>
+				</otherwise>
+			</choice>
+		</foreach>
+	</sub-flow>
+	<sub-flow name="process-api-list-sub-flow" doc:id="1314ee01-cd7c-4b6b-931e-edc47bd66938" >
+		<set-variable value="#[attributes.queryParams.orgId]" doc:name="orgId" doc:id="7d48b6d6-b14f-42e4-8547-3613d77e5c9d" variableName="orgId" />
+		<set-variable value="#[attributes.queryParams.envId]" doc:name="envId" doc:id="858ef40c-c4ec-45ce-abc8-43e30c35fc1f" variableName="envId" />
+		<set-variable value="#[attributes.queryParams.token]" doc:name="token" doc:id="2768d87e-b269-4ce2-b858-afba5da77c9a" variableName="token" />
+		<flow-ref doc:name="get-profile-information-sub-flow" doc:id="3a67a13c-4624-4408-9d76-d2302725ce3c" name="get-profile-information-sub-flow"/>
+		<set-variable value="#[output application/json --- (payload.memberOfOrganizations filter($.id ~= vars.orgId) map $.name)[0]]" doc:name="bgName" doc:id="005d7713-61b4-47cc-9f1a-0f42368030a5" variableName="bgName"/>
+		<flow-ref doc:name="get-all-runtime-applications-sub-flow" doc:id="84fec14d-6441-4762-abb7-d1a69e5d6a44" name="get-all-runtime-applications-sub-flow" />
+		<flow-ref doc:name="get-all-rtf-applications-sub-flow" doc:id="a2cf509d-e1e6-4d21-8164-c07bd0f0b99d" name="get-all-rtf-applications-sub-flow" />
+		<ee:transform doc:name="Variable runtimeApi" doc:id="3f5962f9-39fd-40dd-b4b5-9b0809abac0e">
+			<ee:message>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="apiList"><![CDATA[%dw 2.0
+output application/java
+---
+[]]]></ee:set-variable>
+				<ee:set-variable variableName="apiEndPointDetails"><![CDATA[%dw 2.0
+output application/java
+---
+[]]]></ee:set-variable>
+				<ee:set-variable variableName="runtimeApi"><![CDATA[%dw 2.0
+output application/json
+var removeCloudV1 = vars.cloudHubAPI.data map  {
+	id : ($.id splitBy("-v1"))[0],
+	status : $.lastReportedStatus
+}
+var removeCloudAp = removeCloudV1 map {
+	id : ($.id splitBy("-ap"))[0],
+	status : $.status
+}
+var finalCloudData = removeCloudAp map {
+	id : ($.id ++ "-api"),
+	status : $.status
+}
+
+var removeRtfV1 = vars.rtfAPI.items map  {
+	id : ($.name splitBy("-v1"))[0],
+	status : $.application.status
+}
+var removeRtfAp = removeRtfV1 map  {
+	id : ($.id splitBy("-ap"))[0],
+	status : $.status
+}
+var finalRtfData = removeRtfAp map  {
+	id : ($.id ++ "-api"),
+	status : $.status
+}
+---
+finalCloudData ++ finalRtfData
+ ]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<foreach doc:name="For Each" doc:id="8322aaea-de71-402f-916e-43158e4d5af1" collection="#[vars.runtimeApi]">
+			<set-variable value="#[payload]" doc:name="exSearchPayload" doc:id="cdff4652-c1d0-425f-a5e6-e3779fbfa0c3" variableName="exSearchPayload" />
+			<flow-ref doc:name="get-exchange-asset-sub-flow" doc:id="a2349812-c1e2-4db0-ac56-d813eec3b705" name="get-exchange-asset-sub-flow" />
+			<ee:transform doc:name="apiList" doc:id="172afdb1-4a63-4638-8a18-3606b61037b0">
+				<ee:message>
+				</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="apiList"><![CDATA[%dw 2.0
+output application/json
+var dataFind = payload filter ($.assetId contains((vars.exSearchPayload.id splitBy("-api"))[0])) map(value,indexOfPayload) -> {
+	groupId: value.groupId,
+	bgName: vars.bgName,
+	assetId: value.assetId,
+	version: value.version,
+	versionGroup: value.versionGroup,
+	"type": value."type",
+	status: if ( vars.exSearchPayload.id contains value.assetId ) vars.exsearchPayload.status else ""
+}
+
+var dataNotFind = [
+	{
+    "groupId": "NOT FOUND",
+    "assetId": vars.exSearchPayload.id,
+     bgName: vars.bgName,
+    "version": "There is no exchange information available for this Asset",
+    "versionGroup": "",
+    "type": "",
+    "status": vars.exsearchPayload.status
+  }
+]
+
+---
+vars.apiList default[] ++ (if(!isEmpty(dataFind)) dataFind else dataNotFind)]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+		</foreach>
+	</sub-flow>
+</mule>

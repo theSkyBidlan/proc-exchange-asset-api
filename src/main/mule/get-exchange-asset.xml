@@ -42,4 +42,20 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 			</http:response-validator>
 		</http:request>
 	</sub-flow>
+	<sub-flow name="get-exch-api-instance-sub-flow" doc:id="a67b1202-e5ad-4885-951f-5292ea3b9f23" >
+		<http:request method="GET" doc:name="Get API Instances" doc:id="a2096b28-d165-4b89-9e82-e803dafa9ebc" config-ref="HTTP_Request_configuration-1" path="/exchange/api/v2/assets/{groupId}/{assetId}/versionGroups/{versionGroup}/instances">
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer " ++ (vars.token default"")
+}]]]></http:headers>
+			<http:uri-params ><![CDATA[#[output application/java
+---
+{
+	assetId : payload.assetId,
+	versionGroup : payload.versionGroup,
+	groupId : payload.groupId
+}]]]></http:uri-params>
+		</http:request>
+	</sub-flow>
 </mule>

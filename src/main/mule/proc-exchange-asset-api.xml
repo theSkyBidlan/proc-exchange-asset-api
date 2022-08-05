@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd ">
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd ">
     <http:listener-config name="proc-exchange-asset-api-httpListenerConfig">
         <http:listener-connection host="0.0.0.0" port="8081" />
     </http:listener-config>
@@ -97,6 +97,9 @@ output application/json
         </error-handler>
     </flow>
     <flow name="get:\asset:application\json:proc-exchange-asset-api-config">
-		<flow-ref doc:name="porcess-asset-details-sub-flow" doc:id="1766c1c7-c9d7-4ba8-ab28-e593a5bb53f4" name="porcess-asset-details-sub-flow"/>
+        <flow-ref doc:name="porcess-asset-details-sub-flow" doc:id="1766c1c7-c9d7-4ba8-ab28-e593a5bb53f4" name="porcess-asset-details-sub-flow" />
+    </flow>
+    <flow name="get:\contract:application\json:proc-exchange-asset-api-config">
+		<flow-ref doc:name="process-api-manager-details-sub-flow" doc:id="2ee4f8ee-b41c-41f5-b438-2db8bcb52c44" name="process-api-manager-details-sub-flow"/>
     </flow>
 </mule>

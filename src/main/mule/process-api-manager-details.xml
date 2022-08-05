@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+	<sub-flow name="process-api-manager-details-sub-flow" doc:id="f5dd8b2a-05a2-49d8-ac41-efd9a58bf2c2" >
+		<flow-ref doc:name="process-api-list-sub-flow" doc:id="fec67bb3-76d7-43cf-b79f-cd5445c619b4" name="process-api-list-sub-flow"/>
+		<ee:transform doc:name="Var apiContractDetails" doc:id="9e377fc2-d125-484d-9d8b-95c733959c0e" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="apiInstanceDetails" ><![CDATA[%dw 2.0
+output application/java
+---
+[]
+]]></ee:set-variable>
+				<ee:set-variable variableName="apiContractIdDetails" ><![CDATA[%dw 2.0
+output application/java
+---
+[]]]></ee:set-variable>
+				<ee:set-variable variableName="apiContractDetails" ><![CDATA[%dw 2.0
+output application/java
+---
+[]]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<flow-ref doc:name="porcess-api-instance-details-sub-flow" doc:id="5066423c-3108-43b1-b62b-76c0fb4ca27c" name="porcess-api-instance-details-sub-flow"/>
+		<flow-ref doc:name="process-contract-id-details-sub-flow" doc:id="772445ee-c45c-4f03-b52e-950a00d49286" name="process-contract-id-details-sub-flow"/>
+		<flow-ref doc:name="process-contract-owner-details-sub-flow" doc:id="a1766f39-f7fa-4581-aa1c-a2afbfee3800" name="process-contract-owner-details-sub-flow"/>
+		<set-variable value='#[output application/java --- "api-manager-app-details-"++ (vars.bgName default vars.orgId) ++ "-" ++ now() as Number ++ ".csv"]' doc:name="filePath" doc:id="73e90b52-0708-4895-886d-b04c407d1d51" variableName="filePath" mimeType="application/java"/>
+		<set-payload value="#[vars.apiContractDetails]" doc:name="Set JSON Payload" doc:id="8ac876e0-d97d-4b18-a6aa-0c17ec608708" mimeType="application/json"/>
+		<flow-ref doc:name="write-file-details-sub-flow" doc:id="9cedbb26-464a-463c-abe0-cf4db97b5fb0" name="write-file-details-sub-flow"/>
+		<ee:transform doc:name="Transform Message" doc:id="7391009a-2fb1-4104-bf97-bdd832ebafe8" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	statusCode: "200",
+	statusDescription: (vars.filePath default "") ++ " File Processed Successfully."
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</sub-flow>
+	<sub-flow name="porcess-api-instance-details-sub-flow" doc:id="b0030d7f-821f-4834-b4e5-01bab94092b1" >
+		<foreach doc:name="For Each" doc:id="869335e9-c216-4d3c-83cb-2e721004e434" collection="#[vars.apiList distinctBy $.assetId]">
+			<set-variable value="#[payload]" doc:name="requestPayload" doc:id="347e2e68-b5ba-4eb5-a5e1-3cc031ef7705" variableName="requestPayload" />
+			<choice doc:name="Is API on Exchange ?" doc:id="108aa372-759f-4dfe-8798-355e3cbd4b4a">
+				<when expression='#[vars.requestPayload.groupId != "NOT FOUND"]'>
+					<flow-ref doc:name="get-exch-api-instance-sub-flow" doc:id="89a8d06f-5bdc-4a38-a5f0-b67a05c58840" name="get-exch-api-instance-sub-flow" />
+					<choice doc:name="check Response" doc:id="62235b5f-5be3-480a-b524-3fce942b830b">
+				<when expression="#[attributes.statusCode == 200]">
+					<ee:transform doc:name="apiInstanceDetails" doc:id="d2130d8e-f6e7-4634-9ff8-8c0113571d86">
+				<ee:message>
+				</ee:message>
+				<ee:variables>
+									<ee:set-variable variableName="apiInstanceDetails" ><![CDATA[%dw 2.0
+output application/json
+var instanceDetail = payload filter($.organizationId == vars.orgId and $.environmentId == vars.envId and $.status == "active") map  (item, index) -> {
+    "groupId": vars.requestPayload.groupId,
+     bgName: vars.requestPayload.bgName,
+    "assetId": vars.requestPayload.assetId,
+    "version": vars.requestPayload.version,
+    versionGroup: vars.requestPayload.versionGroup,
+    status: vars.requestPayload.status,
+    "type": vars.requestPayload."type",
+    apiId: item.id,
+    totalContractCount: item.contractsCount
+    }
+    
+
+---
+(vars.apiInstanceDetails default[] ++ instanceDetail)]]></ee:set-variable>
+				
+</ee:variables>
+			</ee:transform>
+				</when>
+				<otherwise>
+					<ee:transform doc:name="apiInstanceDetails" doc:id="afeb3b56-972f-4f16-bd40-904904bd883b">
+						<ee:message />
+						<ee:variables>
+									<ee:set-variable variableName="apiInstanceDetails" ><![CDATA[%dw 2.0
+output application/json
+var instanceDetail =  [{
+    "groupId": vars.requestPayload.groupId,
+    bgName: vars.requestPayload.bgName,
+    "assetId": vars.requestPayload.assetId,
+    "version": vars.requestPayload.version,
+    versionGroup: vars.requestPayload.versionGroup,
+    status: vars.requestPayload.status,
+    "type": vars.requestPayload."type",
+    apiId: "",
+    totalContractCount: 0
+    }]
+---
+(vars.apiInstanceDetails default[] ++ instanceDetail)]]></ee:set-variable>
+						
+</ee:variables>
+					</ee:transform>
+				</otherwise>
+			</choice>
+				</when>
+				<otherwise>
+					<ee:transform doc:name="apiInstanceDetails" doc:id="08a873a5-07d7-41dc-854d-34815175a1b7">
+						<ee:message />
+						<ee:variables>
+							<ee:set-variable variableName="apiInstanceDetails" ><![CDATA[%dw 2.0
+output application/json
+var instanceDetail =  [{
+    "groupId": vars.requestPayload.groupId,
+     bgName: vars.requestPayload.bgName,
+    "assetId": vars.requestPayload.assetId,
+    "version": vars.requestPayload.version,
+    versionGroup: vars.requestPayload.versionGroup,
+    status: vars.requestPayload.status,
+    "type": vars.requestPayload."type",
+    apiId: "",
+    totalContractCount: 0
+    }]
+---
+(vars.apiInstanceDetails default[] ++ instanceDetail)]]></ee:set-variable>
+						
+</ee:variables>
+					</ee:transform>
+				</otherwise>
+			</choice>
+		</foreach>
+		<remove-variable doc:name="requestPayload" doc:id="a0579709-3ba8-4c55-a5d9-9c92339bcc1d" variableName="requestPayload"/>
+		<logger level="INFO" doc:name="Flow Ends" doc:id="1d3a976e-288e-4995-842a-f8aa832310c9" message='#["### porcess-api-instance-details-sub-flow end with apiInstanceDetails count "++ (sizeOf(vars.apiInstanceDetails)) ++" ###"]'/>
+	
+</sub-flow>
+	<sub-flow name="process-contract-id-details-sub-flow" doc:id="3187ffdb-df6d-4360-927e-7cc4957a6158" >
+		<foreach doc:name="For Each" doc:id="27abc615-efb1-439b-b8a6-2c76212570d3" collection="#[vars.apiInstanceDetails]">
+			<set-variable value="#[payload]" doc:name="contractPayload" doc:id="d04c233d-ea5c-4ce2-b85d-01fdc20207b5" variableName="contractPayload"/>
+			<choice doc:name="check contractCount" doc:id="35f54793-5e0e-40bf-9ebd-5b8c96a08679">
+			<when expression='#[vars.contractPayload.totalContractCount &gt; 0]'>
+				<flow-ref doc:name="get-api-contract-list-sub-flow" doc:id="b81ddf29-4df2-4546-ba2b-db4b54276061" name="get-api-contract-list-sub-flow" />
+					<ee:transform doc:name="apiContractIdDetails" doc:id="bcbbd731-2e0c-4576-ac60-028f6f270cb7" >
+						<ee:message >
+						</ee:message>
+						<ee:variables >
+							<ee:set-variable variableName="apiContractIdDetails" ><![CDATA[%dw 2.0
+output application/json
+var contractIdDetail = payload.contracts map (item, index) -> {
+    "groupId": vars.contractPayload.groupId,
+    bgName: vars.contractPayload.bgName,
+	"assetId": vars.contractPayload.assetId,
+	"version": vars.contractPayload.version,
+	versionGroup: vars.contractPayload.versionGroup,
+	status: vars.contractPayload.status,
+	"type": vars.contractPayload."type",
+	apiId: vars.contractPayload.apiId,
+	applicationName: item.application.name,
+	contractIndex: index + 1,
+	totalContractCount: vars.contractPayload.totalContractCount,
+	contractId: item.id
+    }
+---
+(vars.apiContractIdDetails default[] ++ contractIdDetail)
+]]></ee:set-variable>
+						</ee:variables>
+					</ee:transform>
+			</when>
+				<otherwise >
+					<ee:transform doc:name="apiContractIdDetails" doc:id="566b1591-bafc-48ed-87a1-2a83e3bf4ddb" >
+						<ee:message >
+						</ee:message>
+						<ee:variables >
+							<ee:set-variable variableName="apiContractIdDetails" ><![CDATA[%dw 2.0
+output application/json
+var contractIdDetail =  [{
+	"groupId": vars.contractPayload.groupId,
+	bgName: vars.contractPayload.bgName,
+	"assetId": vars.contractPayload.assetId,
+	"version": vars.contractPayload.version,
+	versionGroup: vars.contractPayload.versionGroup,
+	status: vars.contractPayload.status,
+	"type": vars.contractPayload."type",
+	apiId: vars.contractPayload.apiId,
+	applicationName: "NA",
+	contractIndex: "NA",
+	totalContractCount: vars.contractPayload.totalContractCount,
+	contractId: "NA"
+}]
+---
+(vars.apiContractIdDetails default[] ++ contractIdDetail)]]></ee:set-variable>
+						</ee:variables>
+					</ee:transform>
+				</otherwise>
+		</choice>
+		</foreach>
+		<remove-variable doc:name="contractPayload" doc:id="1b9f1f22-83af-457e-a2c5-09159674f38c" variableName="contractPayload"/>
+		<logger level="INFO" doc:name="Flow Ends" doc:id="fedc8af5-d287-4b84-bf85-78b619bf3b82" message='#["### process-contract-id-details-sub-flow end with apiContractIdDetails count "++ (sizeOf(vars.apiContractIdDetails)) ++" ###"]' />
+	</sub-flow>
+	<sub-flow name="process-contract-owner-details-sub-flow" doc:id="5e3fddab-b6b7-4c57-be18-502676d550e2" >
+		<foreach doc:name="For Each" doc:id="46316f05-fcee-41c1-9c7d-7a430d56c428" collection="#[vars.apiContractIdDetails]">
+			<set-variable value="#[payload]" doc:name="contractIdPayload" doc:id="35733b30-34bf-4673-9d44-ac3656d0be71" variableName="contractIdPayload" />
+			<choice doc:name="check contractId" doc:id="286cce2d-5dc0-404b-a815-d02896a2a8f0">
+			<when expression="#[vars.contractIdPayload.totalContractCount &gt; 0]">
+				<flow-ref doc:name="get-specific-api-contract-sub-flow" doc:id="947fb9f8-0e14-4d6a-b57e-5833a983f2cc" name="get-specific-api-contract-sub-flow" />
+				<ee:transform doc:name="apiContractDetails" doc:id="3c20ba07-edd4-4776-89ba-c39350020525">
+					<ee:message />
+					<ee:variables>
+							<ee:set-variable variableName="apiContractDetails" ><![CDATA[%dw 2.0
+output application/json
+var app = payload.application 
+var ownerDetail = {
+    "groupId": vars.contractIdPayload.groupId,
+    bgName: vars.contractIdPayload.bgName,
+	"assetId": vars.contractIdPayload.assetId,
+	"version": vars.contractIdPayload.version,
+	versionGroup: vars.contractIdPayload.versionGroup,
+	status: vars.contractIdPayload.status,
+	"type": vars.contractIdPayload."type",
+	apiId: vars.contractIdPayload.apiId,
+	applicationName: vars.contractIdPayload.applicationName,
+	contractIndex: vars.contractIdPayload.contractIndex,
+	totalContractCount: vars.contractIdPayload.totalContractCount,
+	contractId: vars.contractIdPayload.contractId,
+	owner: app.owner,
+	email: app.email,
+	clientId: app.clientId
+    }    
+---
+(vars.apiContractDetails + ownerDetail)]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+			</when>
+			<otherwise>
+				<ee:transform doc:name="apiContractDetails" doc:id="653267b5-b161-4fbf-8989-d38cb6f53fd5">
+					<ee:message />
+					<ee:variables>
+							<ee:set-variable variableName="apiContractDetails" ><![CDATA[%dw 2.0
+output application/json
+var ownerDetail = {
+    "groupId": vars.contractIdPayload.groupId,
+    bgName: vars.contractIdPayload.bgName,
+	"assetId": vars.contractIdPayload.assetId,
+	"version": vars.contractIdPayload.version,
+	versionGroup: vars.contractIdPayload.versionGroup,
+	status: vars.contractIdPayload.status,
+	"type": vars.contractIdPayload."type",
+	apiId: vars.contractIdPayload.apiId,
+	applicationName: vars.contractIdPayload.name,
+	contractIndex: vars.contractIdPayload.contractIndex,
+	totalContractCount: vars.contractIdPayload.totalContractCount,
+	contractId: vars.contractIdPayload.contractId,
+	owner: "NA",
+	email: "NA",
+	clientId: "NA"
+    }
+---
+(vars.apiContractDetails + ownerDetail)
+
+]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+			</otherwise>
+		</choice>
+		</foreach>
+		<remove-variable doc:name="contractIdPayload" doc:id="28bebcc0-3f77-4d7b-9324-a9a6321cb133" variableName="contractIdPayload"/>
+		<logger level="INFO" doc:name="Flow Ends" doc:id="8b010390-1dab-4567-ae8a-05adc6c8448d" message='#["### process-contract-details-sub-flow end with apiContractDetails count "++ (sizeOf(vars.apiContractDetails)) ++" ###"]' />
+	</sub-flow>
+	
+</mule>

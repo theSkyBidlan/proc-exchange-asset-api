@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<sub-flow name="get-api-contract-list-sub-flow" doc:id="848331de-ca26-442d-81ad-e042127d09d5" >
+		<http:request method="GET" doc:name="Get API Contract List" doc:id="d6c4f162-a388-4bed-8d5d-99f2e4faecdc" config-ref="HTTP_Request_configuration-1" path="/apimanager/api/v1/organizations/{organizationId}/environments/{environmentId}/apis/{environmentApiId}/contracts">
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer " ++ (vars.token default"")
+}]]]></http:headers>
+			<http:uri-params ><![CDATA[#[output application/java
+---
+{
+	organizationId : vars.orgId,
+	environmentId : vars.envId,
+	environmentApiId: payload.apiId
+}]]]></http:uri-params>
+		</http:request>
+	</sub-flow>
+	<sub-flow name="get-specific-api-contract-sub-flow" doc:id="8a3c8136-656f-4e31-bc07-a8dd74147a51" >
+		<http:request method="GET" doc:name="Get Specific API Contract" doc:id="ccdebb46-3ee8-4177-860b-63d826d49de6" config-ref="HTTP_Request_configuration-1" path="/apimanager/api/v1/organizations/{organizationId}/environments/{environmentId}/apis/{environmentApiId}/contracts/{contractId}" >
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"Authorization" : "Bearer " ++ (vars.token default"")
+}]]]></http:headers>
+			<http:uri-params ><![CDATA[#[output application/java
+---
+{
+	organizationId : vars.orgId,
+	environmentId : vars.envId,
+	environmentApiId: payload.apiId,
+	contractId: payload.contractId
+}]]]></http:uri-params>
+		</http:request>
+	</sub-flow>
+</mule>
